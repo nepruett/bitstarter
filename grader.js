@@ -37,18 +37,6 @@ var assertFileExists = function(infile) {
   return instr;
 };
 
-var downloadFile = function(url) {
-    rest.get(url).on('complete', function(result, response) {
-        if (result instanceof Error) {
-            console.log("for %s:\n\tError: %s", url, util.format(response.message));
-            process.exit(1);
-        } else {
-            fs.writeFileSync("downloaded_index.html", result);
-        }
-    });
-    return "downloaded_index.html";
-};
-
 var cheerioHtmlFile = function(htmlfile) {
 	return cheerio.load(fs.readFileSync(htmlfile));
 };
@@ -80,9 +68,24 @@ if(require.main == module) {
 		.option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
         .option('-u, --url <url>', 'URL to index.html', clone(downloadFile))
 		.parse(process.argv);
-	var checkJson = checkHtmlFile(program.url ? program.url : program.file, program.checks);
-	var outJson = JSON.stringify(checkJson, null, 4);
-	console.log(outJson);
+    if (program.url) {
+        rest.get(program.url).on('complete', function(result, response) {
+            if (result instanceof Error) {
+                console.log("for %s:\n\tError: %s", url, util.format(response.message));
+                process.exit(1);
+            } else {
+                fs.writeFileSync("downloaded_index.html", result);
+                var checkJson = checkHtmlFile("downloaded_index.html", program.checks);
+                var outJson = JSON.stringify(checkJson, null, 4);
+                console.log(outJson);
+            }
+        });
+    }
+    if (program.file) {
+        var checkJson = checkHtmlFile(program.file, program.checks);
+        var outJson = JSON.stringify(checkJson, null, 4);
+        console.log(outJson);
+    }
 } else {
 	exports.checkHtmlFile = checkHtmlFile;
 }
